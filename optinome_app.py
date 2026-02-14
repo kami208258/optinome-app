@@ -11,6 +11,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import streamlit as st
 import plotly.graph_objects as go
+import textwrap
 
 # ---------------------------------------------------------------------
 # Paths / constants
@@ -799,90 +800,360 @@ def build_master(project_dir: Path) -> pd.DataFrame:
 
 
 def _style(ax, x_label: str, y_label: str):
-    ax.set_xlabel(x_label)
-    ax.set_ylabel(y_label)
-    ax.grid(True, alpha=0.25)
+    """Apply common styling to axes."""
+    ax.set_xlabel(x_label, fontsize=9, fontweight="bold", color="#333")
+    ax.set_ylabel(y_label, fontsize=9, fontweight="bold", color="#333")
+    ax.grid(True, linestyle="--", linewidth=0.5, alpha=0.3, color="#ccc")
+    ax.tick_params(axis="both", which="major", labelsize=8)
+    # Remove top and right spines for a cleaner look
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
 
 
 def plot_ph_temp(df: pd.DataFrame, title_suffix: str):
-    fig, ax1 = plt.subplots(figsize=(9, 5))
+    fig, ax1 = plt.subplots(figsize=(6, 4))  # Smaller default size for grid
     ax2 = ax1.twinx()
 
     for v, sub in df.groupby("vessel"):
         sub = sub.dropna(subset=["time_hours"])
         if sub["ph"].notna().any():
-            ax1.plot(sub["time_hours"], sub["ph"], label=f"{v} pH")
+            ax1.plot(sub["time_hours"], sub["ph"], label=f"{v} pH", linewidth=1.5)
         if sub["temp_c"].notna().any():
-            ax2.plot(sub["time_hours"], sub["temp_c"], linestyle="--", label=f"{v} Temp")
+            ax2.plot(
+                sub["time_hours"],
+                sub["temp_c"],
+                linestyle="--",
+                label=f"{v} Temp",
+                linewidth=1.5,
+                alpha=0.7,
+            )
 
     _style(ax1, "Time (h)", "pH")
-    ax2.set_ylabel("Temp (°C)")
-    ax1.set_title(f"{title_suffix} – pH & Temp")
+    ax2.set_ylabel("Temp (°C)", fontsize=9, fontweight="bold", color="#333")
+    ax2.tick_params(axis="both", labelsize=8)
+    ax2.spines["top"].set_visible(False)
+
+    ax1.set_title(f"pH & Temp", fontsize=10, fontweight="bold", pad=10)
 
     lines1, labels1 = ax1.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
-    ax1.legend(lines1 + lines2, labels1 + labels2, loc="best")
-    st.pyplot(fig)
+    ax1.legend(
+        lines1 + lines2,
+        labels1 + labels2,
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.15),
+        ncol=4,
+        fontsize=8,
+        frameon=False,
+    )
+    plt.tight_layout()
+    return fig
 
 
 def plot_do_air_rpm(df: pd.DataFrame, title_suffix: str):
-    fig, ax1 = plt.subplots(figsize=(9, 5))
+    fig, ax1 = plt.subplots(figsize=(6, 4))
     ax2 = ax1.twinx()
 
     for v, sub in df.groupby("vessel"):
         sub = sub.dropna(subset=["time_hours"])
         if sub["do_data"].notna().any():
-            ax1.plot(sub["time_hours"], sub["do_data"], label=f"{v} DO")
+            ax1.plot(sub["time_hours"], sub["do_data"], label=f"{v} DO", linewidth=1.5)
         if sub["air_slph"].notna().any():
-            ax1.plot(sub["time_hours"], sub["air_slph"], linestyle="--", label=f"{v} Air")
+            ax1.plot(
+                sub["time_hours"],
+                sub["air_slph"],
+                linestyle="--",
+                label=f"{v} Air",
+                linewidth=1.5,
+                alpha=0.7,
+            )
         if sub["rpm"].notna().any():
-            ax2.plot(sub["time_hours"], sub["rpm"], linestyle=":", label=f"{v} RPM")
+            ax2.plot(
+                sub["time_hours"],
+                sub["rpm"],
+                linestyle=":",
+                label=f"{v} RPM",
+                linewidth=1.5,
+                alpha=0.6,
+            )
 
     _style(ax1, "Time (h)", "DO (%) / Air (sL/h)")
-    ax2.set_ylabel("RPM")
-    ax1.set_title(f"{title_suffix} – DO / Air / RPM")
+    ax2.set_ylabel("RPM", fontsize=9, fontweight="bold", color="#333")
+    ax2.tick_params(labelsize=8)
+    ax2.spines["top"].set_visible(False)
+    
+    ax1.set_title(f"DO / Air / RPM", fontsize=10, fontweight="bold", pad=10)
 
     lines1, labels1 = ax1.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
-    ax1.legend(lines1 + lines2, labels1 + labels2, loc="best")
-    st.pyplot(fig)
+    ax1.legend(
+        lines1 + lines2,
+        labels1 + labels2,
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.15),
+        ncol=4,
+        fontsize=8,
+        frameon=False,
+    )
+    plt.tight_layout()
+    return fig
 
 
 def plot_feeds(df: pd.DataFrame, title_suffix: str):
-    fig, ax = plt.subplots(figsize=(9, 5))
+    fig, ax = plt.subplots(figsize=(6, 4))
     for v, sub in df.groupby("vessel"):
         if sub["feed_fa_ml_h"].notna().any():
-            ax.plot(sub["time_hours"], sub["feed_fa_ml_h"], label=f"{v} FA1")
+            ax.plot(
+                sub["time_hours"], sub["feed_fa_ml_h"], label=f"{v} FA1", linewidth=1.5
+            )
 
     _style(ax, "Time (h)", "FA1 feed (mL/h)")
-    ax.set_title(f"{title_suffix} – Glycerol/MeOH feed (FA1)")
-    ax.legend()
-    st.pyplot(fig)
+    ax.set_title(f"Glycerol/MeOH feed (FA1)", fontsize=10, fontweight="bold", pad=10)
+    ax.legend(
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.15),
+        ncol=4,
+        fontsize=8,
+        frameon=False,
+    )
+    plt.tight_layout()
+    return fig
 
 
 def plot_base(df: pd.DataFrame, title_suffix: str):
-    fig, ax = plt.subplots(figsize=(9, 5))
+    fig, ax = plt.subplots(figsize=(6, 4))
     for v, sub in df.groupby("vessel"):
         if sub["feed_fb_ml_h"].notna().any():
-            ax.plot(sub["time_hours"], sub["feed_fb_ml_h"], label=f"{v} FB1")
+            ax.plot(
+                sub["time_hours"], sub["feed_fb_ml_h"], label=f"{v} FB1", linewidth=1.5
+            )
 
     _style(ax, "Time (h)", "Base FB1 (mL/h)")
-    ax.set_title(f"{title_suffix} – Base feed")
-    ax.legend()
-    st.pyplot(fig)
+    ax.set_title(f"Base feed", fontsize=10, fontweight="bold", pad=10)
+    ax.legend(
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.15),
+        ncol=4,
+        fontsize=8,
+        frameon=False,
+    )
+    plt.tight_layout()
+    return fig
 
 
 def plot_antifoam(df: pd.DataFrame, title_suffix: str):
-    fig, ax = plt.subplots(figsize=(9, 5))
+    fig, ax = plt.subplots(figsize=(6, 4))
     for v, sub in df.groupby("vessel"):
         if sub["feed_fc_ml_h"].notna().any():
-            ax.plot(sub["time_hours"], sub["feed_fc_ml_h"], label=f"{v} FC1")
+            ax.plot(
+                sub["time_hours"], sub["feed_fc_ml_h"], label=f"{v} FC1", linewidth=1.5
+            )
 
     _style(ax, "Time (h)", "Antifoam FC1 (mL/h)")
-    ax.set_title(f"{title_suffix} – Antifoam")
-    ax.legend()
-    st.pyplot(fig)
+    ax.set_title(f"Antifoam", fontsize=10, fontweight="bold", pad=10)
+    ax.legend(
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.15),
+        ncol=4,
+        fontsize=8,
+        frameon=False,
+    )
+    plt.tight_layout()
+    return fig
 
+
+# ---------------------------------------------------------------------
+# Styling & Theme
+# ---------------------------------------------------------------------
+
+def get_custom_css():
+    return """
+    <style>
+        /* --- Root Variables --- */
+        :root {
+            --primary-color: #0E76A8;
+            --background-color: #F8F9FA;
+            --card-bg: #FFFFFF;
+            --text-color: #2C3E50;
+            --text-secondary: #6C757D;
+            --border-radius: 12px;
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+            --font-main: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        /* --- Global Reset / Defaults --- */
+        body {
+            font-family: var(--font-main);
+            color: var(--text-color);
+            background-color: var(--background-color);
+        }
+        
+        /* Hide standard Streamlit chrome */
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+        header[data-testid="stHeader"] {
+            display: none;
+        }
+        
+        .stApp {
+            background-color: var(--background-color);
+        }
+
+        /* --- Layout & Spacing --- */
+        .block-container {
+            padding-top: 1rem; /* Reduced since header is hidden */
+            padding-bottom: 3rem;
+            max-width: 1600px;
+        }
+
+        /* --- Sidebar Styling (Always visible, fixed) --- */
+        section[data-testid="stSidebar"] {
+            background-color: #FFFFFF;
+            border-right: 1px solid #E9ECEF;
+            width: 280px !important;
+            min-width: 280px !important;
+            transform: none !important;
+            transition: none !important;
+        }
+        section[data-testid="stSidebar"] > div:first-child {
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+            padding-top: 1rem;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE/Edge */
+        }
+        section[data-testid="stSidebar"] > div:first-child::-webkit-scrollbar {
+            display: none; /* Chrome/Safari */
+        }
+        /* Hide ALL sidebar collapse/toggle controls */
+        button[data-testid="stSidebarCollapseButton"],
+        button[kind="headerNoPadding"],
+        [data-testid="collapsedControl"],
+        [data-testid="stSidebarNavCollapseButton"],
+        .stSidebar button[kind="header"],
+        [data-testid="stSidebarCollapsedControl"] {
+            display: none !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+        }
+        /* Prevent sidebar from collapsing */
+        section[data-testid="stSidebar"][aria-expanded="false"] {
+            width: 280px !important;
+            min-width: 280px !important;
+            transform: none !important;
+            margin-left: 0 !important;
+        }
+        [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2 {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+        }
+        
+        /* --- Filter Bar (Top) --- */
+        .filter-bar {
+            background: var(--card-bg);
+            padding: 1rem 1.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 2rem;
+            border: 1px solid #E9ECEF;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        /* --- Cards --- */
+        .stCard {
+            background-color: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid #F1F3F5;
+            margin-bottom: 1.5rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .stCard:hover {
+            box-shadow: var(--shadow-md);
+        }
+        
+        /* Fix for overlaying plots/content */
+        .main .block-container {
+            z-index: 1;
+        }
+
+        /* --- Metrics / KPI --- */
+        [data-testid="stMetric"] {
+            background-color: #FFFFFF;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid #E9ECEF;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            text-align: center;
+            min-height: 110px; /* Ensure equal height */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        [data-testid="stMetricLabel"] {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        [data-testid="stMetricValue"] {
+            color: var(--primary-color);
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+
+        /* --- Tabs --- */
+        .stTabs [data-baseweb="tab-list"] {
+            gap: 8px;
+            background-color: transparent;
+            padding-bottom: 5px;
+        }
+        .stTabs [data-baseweb="tab"] {
+            height: 40px;
+            border-radius: 20px;
+            padding: 0 20px;
+            background-color: #E9ECEF;
+            border: none;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+        .stTabs [data-baseweb="tab"][aria-selected="true"] {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        /* --- Headings --- */
+        h1, h2, h3 {
+            font-family: var(--font-main);
+            font-weight: 700;
+            color: var(--text-color);
+        }
+        h3 {
+            font-size: 1.1rem;
+            margin-top: 0;
+            margin-bottom: 1rem;
+        }
+
+        /* --- Tables --- */
+        [data-testid="stDataFrame"] {
+            border: 1px solid #E9ECEF;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        /* --- Accordion (Expander) --- */
+        .streamlit-expanderHeader {
+            background-color: #fff;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+    </style>
+    """
 
 # ---------------------------------------------------------------------
 # Suggestions / DOE
@@ -890,38 +1161,38 @@ def plot_antifoam(df: pd.DataFrame, title_suffix: str):
 
 
 def render_suggestions(exp_id: str):
-    st.subheader(f"Process Optimization Suggestions – {exp_id}")
+    st.markdown("### Process Optimization Suggestions")
+    
+    with st.expander("A. Core set-points (Induction Phase)", expanded=True):
+        st.info("🎯 **Target**: Balance growth & protein stability.")
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown("""
+            - **DO set-point**: `25–35%` (Avoid <15%)
+            - **Temperature**: `25–26°C` (Promotes folding)
+            """)
+        with c2:
+            st.markdown("""
+            - **pH**: `5.2–5.8`
+            - **Agitation**: Use Airflow as main lever; minimize RPM shear.
+            """)
 
-    st.markdown("### A. Core set-points (Induction Phase)")
-    st.markdown(
-        """
-- **DO set-point:** 25–35%. Avoid <15% – prevents oxygen limitation.  
-- **Temp:** Shift to **25–26°C** in induction – better folding.  
-- **pH:** Aim **5.2–5.8** – balance growth & protein stability.  
-- **Air/RPM:** Airflow as main DO lever, RPM second – minimize shear.
-"""
-    )
+    with st.expander("B. Carbon & Induction Strategy"):
+        st.markdown("""
+        1. **Glycerol Batch**: Target OD600 ~50–100.
+        2. **Derepression**: 2–4h low glycerol feed.
+        3. **Adaptation**: Slowly ramp FA1. Residual `0.5–1.0 g/L`.
+        4. **Induction**: Residual MeOH `0.5–2.0 g/L`.
+        """)
+        st.caption("Future: Consider Sorbitol co-feed (20–40% carbon).")
 
-    st.markdown("### B. Carbon & Induction Strategy")
-    st.markdown(
-        """
-- Glycerol batch → OD600 ~50–100  
-- Derepression: 2–4 h low glycerol feed  
-- MeOH adaptation: slowly ramp FA1, residual 0.5–1.0 g/L  
-- Induction: residual MeOH 0.5–2.0 g/L  
-- Future: sorbitol co-feed 20–40% of carbon.
-"""
-    )
-
-    st.markdown("### C. Control heuristics")
-    st.markdown(
-        """
-- Keep DO curve smooth; avoid oscillations  
-- Make **small FA1 changes frequently** instead of big jumps  
-- Base feed (FB1) is a proxy for metabolic activity  
-- Once collagen assay is online → use titer, qP, STY to tune profiles.
-"""
-    )
+    with st.expander("C. Control Heuristics"):
+        st.success("💡 **Tip**: Base feed (FB1) is a good proxy for metabolic activity.")
+        st.markdown("""
+        - Keep DO curve smooth.
+        - Make small FA1 changes frequently.
+        - Once collagen assay is online, use titer/qP/STY to tune profiles.
+        """)
 
 
 def generate_default_doe() -> pd.DataFrame:
@@ -933,25 +1204,42 @@ def generate_default_doe() -> pd.DataFrame:
             (25, 28, 0.5, 0.5, 5.5),
         ],
         columns=[
-            "DO_setpoint_%",
-            "Temp_C",
-            "MeOH_residual_gL",
-            "Sorbitol_frac",
-            "pH_setpoint",
+            "DO (%)",
+            "Temp (°C)",
+            "MeOH Res (g/L)",
+            "Sorbitol Frac",
+            "pH",
         ],
-        index=["Run1", "Run2", "Run3", "Run4"],
+        index=["Run 1", "Run 2", "Run 3", "Run 4"],
     )
-    df["Strategy"] = "Airflow-first DO control, small FA1 ramps"
-    df["Induction_h"] = "18–48 h"
+    # Add strategy explanation column
+    # df["Strategy"] = ["Base", "High Stress", "High MeOH", "Mixed"] 
     return df
 
 
 def render_doe():
-    st.subheader("DOE – Next 4 Runs (Protein Production)")
+    st.markdown("### DOE – Next runs (Protein Production)")
+    
     df = generate_default_doe()
-    st.dataframe(df, use_container_width=True)
-    csv = df.to_csv().encode()
-    st.download_button("⬇️ Download DOE CSV", csv, "optinome_doe.csv", "text/csv")
+    
+    # Toolbar
+    c1, c2 = st.columns([1, 4])
+    with c1:
+        csv = df.to_csv().encode()
+        st.download_button(
+            "⬇️ Download CSV", 
+            csv, 
+            "optinome_doe.csv", 
+            "text/csv", 
+            type="primary",
+            use_container_width=True
+        )
+    
+    st.dataframe(
+        df.style.background_gradient(cmap="Blues", subset=["DO (%)", "MeOH Res (g/L)"]),
+        use_container_width=True,
+        height=200
+    )
 
 
 # ---------------------------------------------------------------------
@@ -965,84 +1253,135 @@ def load_master_cached() -> pd.DataFrame:
 
 
 def main():
-    # Sidebar branding
-    st.sidebar.title("Optinome")
-    st.sidebar.markdown("Biomanufacturing Intelligence.")
-    if (ASSETS_DIR / "fermenter.png").exists():
-        st.sidebar.image(str(ASSETS_DIR / "fermenter.png"))
+    st.set_page_config(
+        page_title="Optinome Dashboard",
+        page_icon="🧬",
+        layout="wide",
+        initial_sidebar_state="expanded",
+    )
 
+    # Inject CSS
+    st.markdown(get_custom_css(), unsafe_allow_html=True)
+
+    # --- Data Loading ---
     master = load_master_cached()
-
     if master.empty:
-        st.error("No EXP data found under this project directory.")
+        st.error("❌ No EXP data found under this project directory.")
         st.stop()
 
-    # Debug helper (disabled for production)\n    # with st.expander(\"Debug: master snapshot\", expanded=False):\n    #     st.write(\"Columns:\", list(master.columns))\n    #     st.write(\"Rows:\", len(master))\n    #     st.dataframe(master.head())
+    # --- Native Sidebar ---
+    with st.sidebar:
+        if (ASSETS_DIR / "fermenter.png").exists():
+            st.image(str(ASSETS_DIR / "fermenter.png"), width=180)
+        st.markdown("---")
+        st.markdown("#### Navigation")
+        st.info("Use the tabs on the right to switch views.")
+        st.markdown("")
+        st.markdown("#### Quick Links")
+        st.markdown("📄 [Documentation](#)")
+        st.markdown("🐛 [Report Issue](#)")
+        st.markdown("---")
+        if st.button("🔄 Refresh Data", use_container_width=True):
+            st.cache_data.clear()
+            st.rerun()
 
-    st.title("Optinome — Bioreactor Optimization Dashboard (Protein)")
+    # --- Header & Filter Bar ---
+    c_title, c_filters = st.columns([2, 4], gap="large")
 
-    # Experiment / vessel filters
-    exps = sorted(master["exp_id"].unique())
-    exp_id = st.selectbox("Select Experiment", exps, index=0)
+    with c_title:
+        st.markdown("# Optinome")
+        st.caption("Bioreactor Optimization Dashboard")
 
-    df_exp = master[master["exp_id"] == exp_id].copy()
+    with c_filters:
+        exps = sorted(master["exp_id"].unique())
+        f1, f2 = st.columns([1, 2])
+        with f1:
+            exp_id = st.selectbox("Experiment", exps, index=0, label_visibility="collapsed")
 
-    vessels = sorted(df_exp["vessel"].unique())
-    vessels_selected = st.multiselect(
-        "Include vessels",
-        vessels,
-        default=vessels,
-        help="V1–V4 correspond to Data1–Data4 in the EXP workbook.",
-    )
+        df_exp = master[master["exp_id"] == exp_id].copy()
+        vessels = sorted(df_exp["vessel"].unique())
+
+        with f2:
+            vessels_selected = st.multiselect(
+                "Select Vessels",
+                vessels,
+                default=vessels,
+                label_visibility="collapsed",
+                placeholder="Select vessels..."
+            )
+
+    st.markdown("---")
+
+    # Filtered Data
+    if not vessels_selected:
+        st.warning("Please select at least one vessel.")
+        st.stop()
+        
     df_view = df_exp[df_exp["vessel"].isin(vessels_selected)].copy()
 
+    # --- Main Navigation Tabs ---
     tab_overview, tab_suggestions, tab_doe, tab_analysis = st.tabs(
-        ["📈 Overview & Trends", "💡 Suggestions", "✏️ DOE", "🔬 Analysis"]
+        ["Overview & Trends", "Suggestions", "Doe Design", "HPLC Analysis"]
     )
 
     # -------------------- Overview tab --------------------
     with tab_overview:
-        st.subheader(f"{exp_id} – Overview")
+        
+        # KPI Cards
+        kpi_cols = st.columns(4)
+        with kpi_cols[0]:
+            duration = df_view["time_hours"].max() if df_view["time_hours"].notna().any() else 0
+            st.metric("Run Duration", f"{duration:.1f} h", delta=None)
+        with kpi_cols[1]:
+            st.metric("Vessels Active", f"{len(vessels_selected)}", delta=f"{len(vessels)} total")
+        
+        st.markdown("### Time Course Trends")
+        
+        # Chart Grid
+        # Row 1
+        r1c1, r1c2 = st.columns(2)
+        with r1c1:
+            fig = plot_ph_temp(df_view, exp_id)
+            st.pyplot(fig)
+            
+        with r1c2:
+            fig = plot_do_air_rpm(df_view, exp_id)
+            st.pyplot(fig)
 
-        # Simple KPIs across selected vessels
-        col1, col2 = st.columns(2)
-        with col1:
-            if df_view["time_hours"].notna().any():
-                st.metric("Run duration (h)", f"{df_view['time_hours'].max():.1f}")
-            else:
-                st.metric("Run duration (h)", "—")
+        # Row 2
+        r2c1, r2c2 = st.columns(2)
+        with r2c1:
+            fig = plot_feeds(df_view, exp_id)
+            st.pyplot(fig)
+            
+        with r2c2:
+            fig = plot_base(df_view, exp_id)
+            st.pyplot(fig)
+            
+        # Row 3 (Antifoam + Raw Data)
+        r3c1, r3c2 = st.columns(2)
+        with r3c1:
+            fig = plot_antifoam(df_view, exp_id)
+            st.pyplot(fig)
+        
+        with r3c2:
+            pass # Placeholder or leave empty for balance
 
-        with col2:
-            st.metric("Number of vessels", f"{len(vessels_selected)}")
-
-        st.markdown("---")
-        st.markdown("### Time-course profiles")
-
-        plot_ph_temp(df_view, exp_id)
-        st.markdown("---")
-        plot_do_air_rpm(df_view, exp_id)
-        st.markdown("---")
-        plot_feeds(df_view, exp_id)
-        st.markdown("---")
-        plot_base(df_view, exp_id)
-        st.markdown("---")
-        plot_antifoam(df_view, exp_id)
-
-        st.markdown("---")
-        st.markdown("### Raw data (filtered)")
-        st.dataframe(
-            df_view.sort_values(["vessel", "time_hours"]),
-            use_container_width=True,
-            height=400,
-        )
-
-        csv = df_view.to_csv(index=False).encode("utf-8")
-        st.download_button(
-            "⬇️ Download filtered data (CSV)",
-            csv,
-            f"{exp_id}_filtered.csv",
-            "text/csv",
-        )
+        # Raw Data Expander
+        st.markdown("### Raw Data Export")
+        with st.expander("View Filtered Data Table", expanded=False):
+            st.dataframe(
+                df_view.sort_values(["vessel", "time_hours"]),
+                use_container_width=True,
+                height=300,
+            )
+            csv = df_view.to_csv(index=False).encode("utf-8")
+            st.download_button(
+                "⬇️ Download Filtered CSV",
+                csv,
+                f"{exp_id}_filtered.csv",
+                "text/csv",
+            )
 
     # -------------------- Suggestions tab --------------------
     with tab_suggestions:
@@ -1054,105 +1393,54 @@ def main():
 
     # -------------------- Analysis (HPLC) tab --------------------
     with tab_analysis:
-        st.subheader("HPLC – Glycerol & Methanol")
-
+        st.markdown("### HPLC Analysis")
+        
         hplc_all = load_hplc_for_exp(exp_id)
 
         if hplc_all.empty:
             st.info("No HPLC data found for this experiment.")
         else:
-            # Map units A/B/C/D ↔ vessels V1/V2/V3/V4 by index
+            # Layout: Mapping Table (Left) + Chart (Right)
+            col_map, col_chart = st.columns([1, 2])
+            
+            # Map logic
             vessels_order = sorted(df_exp["vessel"].unique())
             units = sorted(hplc_all["unit"].dropna().unique())
+            unit_for_vessel = {v: units[i] for i, v in enumerate(vessels_order) if i < len(units)}
+            
+            with col_map:
+                st.markdown("#### Vessel Mapping")
+                if not unit_for_vessel:
+                    st.warning("Mapping failed.")
+                else:
+                    map_df = pd.DataFrame([
+                         {"Vessel": v, "HPLC Unit": unit_for_vessel.get(v, "—")}
+                         for v in vessels_order
+                    ]).set_index("Vessel")
+                    st.dataframe(map_df, use_container_width=True)
 
-            unit_for_vessel: dict[str, str] = {}
-            for i, v in enumerate(vessels_order):
-                if i < len(units):
-                    unit_for_vessel[v] = units[i]
-
-            if not unit_for_vessel:
-                st.warning("Could not map HPLC units to vessels.")
-            else:
-                map_df = (
-                    pd.DataFrame(
-                        [
-                            {"Vessel": v, "HPLC unit": unit_for_vessel.get(v, "—")}
-                            for v in vessels_order
-                        ]
-                    )
-                    .set_index("Vessel")
-                )
-                st.caption("Assumed mapping between DASGIP vessels and HPLC units:")
-                st.dataframe(map_df, use_container_width=True)
-
-                # Plot glycerol + MeOH for selected vessels (if mapping exists)
+            with col_chart:
+                 # Plot plotly
                 fig = go.Figure()
-
                 for v in vessels_selected:
                     unit = unit_for_vessel.get(v)
-                    if unit is None:
-                        continue
-                    sub = hplc_all[hplc_all["unit"] == unit].copy()
-                    if sub.empty:
-                        continue
-                    sub = sub.sort_values("eft_hours")
-
-                    fig.add_trace(
-                        go.Scatter(
-                            x=sub["eft_hours"],
-                            y=sub["glycerol_gL"],
-                            mode="lines+markers",
-                            name=f"{v} ({unit}) – Glycerol",
-                        )
-                    )
-                    fig.add_trace(
-                        go.Scatter(
-                            x=sub["eft_hours"],
-                            y=sub["methanol_gL"],
-                            mode="lines+markers",
-                            name=f"{v} ({unit}) – Methanol",
-                            yaxis="y2",
-                        )
-                    )
-
-                if not fig.data:
-                    st.warning(
-                        "No HPLC rows found for the currently selected vessels."
-                    )
-                else:
-                    fig.update_layout(
-                        xaxis=dict(title="EFT (h)"),
-                        yaxis=dict(title="Glycerol (g/L)"),
-                        yaxis2=dict(
-                            title="Methanol (g/L)",
-                            overlaying="y",
-                            side="right",
-                        ),
-                        height=450,
-                        margin=dict(l=40, r=40, t=40, b=40),
-                        legend=dict(
-                            orientation="h",
-                            yanchor="bottom",
-                            y=1.02,
-                            xanchor="right",
-                            x=1,
-                        ),
-                    )
-                    st.plotly_chart(fig, use_container_width=True)
-
-                    with st.expander("Show raw HPLC table"):
-                        st.dataframe(
-                            hplc_all[
-                                [
-                                    "unit",
-                                    "sample",
-                                    "eft_hours",
-                                    "glycerol_gL",
-                                    "methanol_gL",
-                                ]
-                            ],
-                            use_container_width=True,
-                        )
+                    if not unit: continue
+                    sub = hplc_all[hplc_all["unit"] == unit].sort_values("eft_hours")
+                    if sub.empty: continue
+                    
+                    fig.add_trace(go.Scatter(x=sub["eft_hours"], y=sub["glycerol_gL"], mode="lines+markers", name=f"{v} Gly"))
+                    fig.add_trace(go.Scatter(x=sub["eft_hours"], y=sub["methanol_gL"], mode="lines+markers", name=f"{v} MeOH", yaxis="y2"))
+                
+                fig.update_layout(
+                    template="plotly_white",
+                    height=450,
+                    margin=dict(l=20, r=20, t=30, b=20),
+                    xaxis_title="EFT (h)",
+                    yaxis_title="Glycerol (g/L)",
+                    yaxis2=dict(title="Methanol (g/L)", overlaying="y", side="right"),
+                    legend=dict(orientation="h", y=1.1)
+                )
+                st.plotly_chart(fig, use_container_width=True)
 
 
 if __name__ == "__main__":
